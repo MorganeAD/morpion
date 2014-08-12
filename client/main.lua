@@ -71,6 +71,7 @@ function love.update(deltatime)
                     if user_color == 2 then
                         screen = 3
                     else
+                        ask_user = "Wait the other player please"
                         screen = 2
                     end
                 elseif action == 'no' then
@@ -108,12 +109,6 @@ function love.update(deltatime)
                     turn = 1
                 elseif action == 'says' then
                     table.insert(messages, pseudo .. " : " .. message)
-                -- elseif action == 'enters' then
-                --     table.insert(users, pseudo)
-                --     for k, v in pairs(users) do
-                --         print(k, v)
-                --     end
-                --     print()
                 elseif action == 'plays' then
                     color_played_string, m_x, m_y = message:match("(%d*) (%d*) (%d*)$")
                     color_played, m_x, m_y = tonumber(color_played_string), tonumber(m_x), tonumber(m_y)
@@ -123,7 +118,6 @@ function love.update(deltatime)
                     else 
                         turn = 1
                     end
-print(color_played .. " " .. user_color  .. " " .. turn)
                     for i=1, 3 do
                         if m_y > i*100 and m_y < (i+1)*100 then
                             for j=1, 3 do
@@ -137,13 +131,36 @@ print(color_played .. " " .. user_color  .. " " .. turn)
                     end
                     m_x = 0
                     m_y = 0
+                    if  (board[1][1] ~= 0 and board[1][1] == board[1][2] and board[1][1] == board[1][3]) or
+                        (board[2][1] ~= 0 and board[2][1] == board[2][2] and board[2][1] == board[2][3]) or
+                        (board[3][1] ~= 0 and board[3][1] == board[3][2] and board[3][1] == board[3][3]) or
+                        (board[1][1] ~= 0 and board[1][1] == board[2][1] and board[1][1] == board[3][1]) or
+                        (board[1][2] ~= 0 and board[1][2] == board[2][2] and board[1][2] == board[3][2]) or
+                        (board[1][3] ~= 0 and board[1][3] == board[2][3] and board[1][3] == board[3][3]) or
+                        (board[1][1] ~= 0 and board[1][1] == board[2][2] and board[1][1] == board[3][3]) or
+                        (board[3][1] ~= 0 and board[3][1] == board[2][2] and board[3][1] == board[1][3]) then
+                        print(color_played)
+                        local dg = string.format("%s %s %s", pseudo, 'wins', color_played)
+                        udp:send(dg)
+                    end
+                    if board[1][1] == board[1][2] == board[1][3] then
+                        local dg = string.format("%s %s ", user_color, 'wins')
+                        udp:send(dg)
+                    end
 
                     -- for i, column in pairs(board) do
                     --     for j, cell in pairs(column) do
                     --         print(cell)
                     --     end
                     -- end
-
+                elseif action == 'wins' then
+                    color_played = tonumber(message)
+                    if user_color == color_played then
+                        ask_user = 'you win !'
+                    else
+                        ask_user = 'you loose...'
+                    end
+                    screen =2
                 else
                     print("unrecognised command : ", data)
                 end
@@ -191,7 +208,7 @@ function love.draw()
                 end
             end
         elseif screen == 2 then
-            love.graphics.printf('WAIT', 0, HEIGHT/3, WIDTH, 'center')
+            love.graphics.printf(ask_user, 0, HEIGHT/3, WIDTH, 'center')
         end
     end
 end
@@ -211,5 +228,4 @@ function love.quit()
     local dg = string.format("%s %s ", user_pseudo, 'quits')
     udp:send(dg)
 end
-
 

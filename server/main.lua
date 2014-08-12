@@ -51,8 +51,13 @@ while running do
             
             for k, v in pairs(users) do
                 udp:sendto(string.format("%s %s %s", pseudo, 'plays', message), v.ip,  v.port)
-                print(message)
             end
+        elseif action == 'wins' then
+            print(message)
+            for k, v in pairs(users) do
+                udp:sendto(string.format("%s %s %s", pseudo, 'wins', message), v.ip,  v.port)
+            end
+            print(WIN)
         elseif action == 'quits' then
             users[pseudo] = nil
         else
@@ -63,3 +68,5 @@ while running do
     end
     socket.sleep(0.01)
 end
+
+
