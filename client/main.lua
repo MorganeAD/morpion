@@ -21,6 +21,8 @@ function love.load()
     background = love.graphics.newImage( "bg.png" )
     user_color = 0
     color_played = 0
+    color = ""
+    mes = ""
 
 
     messages = {}
@@ -85,7 +87,7 @@ function love.update(deltatime)
         -- the user send something to the server
         if t > updaterate then
             if love.keyboard.isDown('return') then
-                local dg = string.format("%s %s %s", user_pseudo, 'says', text)
+                local dg = string.format("%s %s %s %s", user_pseudo, 'says', user_color, text)
                 udp:send(dg)
                 text = ""
             end
@@ -108,7 +110,8 @@ function love.update(deltatime)
                     screen = 3
                     turn = 1
                 elseif action == 'says' then
-                    table.insert(messages, pseudo .. " : " .. message)
+                    color, mes = message:match("(%d*) (.*)$")
+                    table.insert(messages, pseudo .. " " .. color .. " " .. mes)
                 elseif action == 'plays' then
                     color_played_string, m_x, m_y = message:match("(%d*) (%d*) (%d*)$")
                     color_played, m_x, m_y = tonumber(color_played_string), tonumber(m_x), tonumber(m_y)
@@ -181,8 +184,9 @@ function love.draw()
         love.graphics.setColor(236, 240, 241)
         love.graphics.rectangle("fill", WIDTH/4, HEIGHT/4, WIDTH/2, HEIGHT/2 )
         love.graphics.setColor(0,15,85)
-        love.graphics.printf(ask_user, 0, HEIGHT/3, WIDTH, 'center')
         love.graphics.printf(text, 0, HEIGHT/2, WIDTH, 'center')
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.printf(ask_user, 0, HEIGHT/3, WIDTH, 'center')
     end
 
     
@@ -191,9 +195,17 @@ function love.draw()
         love.graphics.draw(background,0,0,0)
         love.graphics.setColor(236, 240, 241)
         love.graphics.setColor(0,15,85)
-        love.graphics.printf(text, 30, HEIGHT-100, WIDTH, 'left')
+        love.graphics.printf(text, 30, HEIGHT-52, WIDTH, 'left')
         for k, v in pairs(messages) do
-            love.graphics.printf(v, 30, k*25, love.graphics.getWidth())
+            id, color_string, mes = v:match("(%S*) (%d*) (.*)$")
+            color = tonumber(color_string)
+            if color == 1 then
+                love.graphics.setColor(0,15,85)
+            elseif color == 2 then
+                love.graphics.setColor(198,17,0)
+            end
+            love.graphics.printf(id .. " : ", 0, 404+(k*31), 140, 'right')
+            love.graphics.printf(mes, 150, 404+(k*31), love.graphics.getWidth(), 'left')
         end
         if screen == 3 then
             love.graphics.setColor(255, 255, 255)
@@ -208,7 +220,8 @@ function love.draw()
                 end
             end
         elseif screen == 2 then
-            love.graphics.printf(ask_user, 0, HEIGHT/3, WIDTH, 'center')
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.printf(ask_user, 0, 215, WIDTH, 'center')
         end
     end
 end
