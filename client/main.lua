@@ -2,7 +2,7 @@ function love.load()
     love.graphics.setNewFont("font.ttf", 35)
 
     socket = require "socket"
-    address, port = "localhost", 12345
+    address, port = "kivutar.me", 12345
 
     udp = socket.udp()
     udp:settimeout(0)
@@ -31,9 +31,9 @@ function love.load()
     ask_user = "What's your pseudo?"
 
     board = {
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
     }
     turn = 0
 
@@ -92,9 +92,20 @@ function love.update(deltatime)
                 text = ""
             end
             if m_x > 400 and m_x < 700 and m_y > 100 and m_y < 400 and turn == 1 then
+                for i=1, 3 do
+                    if m_y > i*100 and m_y < (i+1)*100 then
+                        for j=1, 3 do
+                            if m_x > (j+3)*100 and m_x < (j+4)*100 then
+                                if board[j][i] == 0 then
+                                    -- board[j][i] = color_played
+                                    local dg = string.format("%s %s %s %s %s", user_pseudo, 'plays', user_color, j, i)
+                                    udp:send(dg)
+                                end
+                            end
+                        end
+                    end
+                end
                 
-                local dg = string.format("%s %s %s %s %s", user_pseudo, 'plays', user_color, m_x, m_y)
-                udp:send(dg)
                 m_x = 0
                 m_y = 0
             end
@@ -113,25 +124,15 @@ function love.update(deltatime)
                     color, mes = message:match("(%d*) (.*)$")
                     table.insert(messages, pseudo .. " " .. color .. " " .. mes)
                 elseif action == 'plays' then
-                    color_played_string, m_x, m_y = message:match("(%d*) (%d*) (%d*)$")
-                    color_played, m_x, m_y = tonumber(color_played_string), tonumber(m_x), tonumber(m_y)
-
+                    color_played, column_played, line_played = message:match("(%d*) (%d*) (%d*)$")
+                    color_played, column_played, line_played = tonumber(color_played), tonumber(column_played), tonumber(line_played)
+                    board[column_played][line_played] = color_played
                     if  user_color == color_played then
                         turn = 0
                     else 
                         turn = 1
                     end
-                    for i=1, 3 do
-                        if m_y > i*100 and m_y < (i+1)*100 then
-                            for j=1, 3 do
-                                if m_x > (j+3)*100 and m_x < (j+4)*100 then
-                                    if board[j][i] == 0 then
-                                        board[j][i] = color_played
-                                    end
-                                end
-                            end
-                        end
-                    end
+
                     m_x = 0
                     m_y = 0
                     if  (board[1][1] ~= 0 and board[1][1] == board[1][2] and board[1][1] == board[1][3]) or
@@ -227,6 +228,7 @@ function love.draw()
 end
 
 function love.textinput(t)
+    -- if screen == 1 then
      text = text .. t
 end
 
