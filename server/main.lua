@@ -9,6 +9,12 @@ user_color = 0
 local data, msg_or_ip, port_or_nil
 local pseudo, action, message
 
+board = {
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+}
+remaining_turns = 9
 running = true
 
 function size_of_array(array)
@@ -21,7 +27,6 @@ function size_of_array(array)
     else
         return 1
     end
-
 end
 
 print "Server launch"
@@ -48,16 +53,33 @@ while running do
                 udp:sendto(string.format("%s %s %s", pseudo, 'says', message), v.ip,  v.port)
             end
         elseif action == 'plays' then
-            
-            for k, v in pairs(users) do
-                udp:sendto(string.format("%s %s %s", pseudo, 'plays', message), v.ip,  v.port)
+            color_played, column_played, line_played = message:match("(%d*) (%d*) (%d*)$")
+            color_played, column_played, line_played = tonumber(color_played), tonumber(column_played), tonumber(line_played)
+            if board[column_played][line_played] == 0 then
+            board[column_played][line_played] = color_played
+                for k, v in pairs(users) do
+                    udp:sendto(string.format("%s %s %s", pseudo, 'plays', message), v.ip, v.port)
+                end
+                if  (board[1][1] ~= 0 and board[1][1] == board[1][2] and board[1][1] == board[1][3]) or
+                    (board[2][1] ~= 0 and board[2][1] == board[2][2] and board[2][1] == board[2][3]) or
+                    (board[3][1] ~= 0 and board[3][1] == board[3][2] and board[3][1] == board[3][3]) or
+                    (board[1][1] ~= 0 and board[1][1] == board[2][1] and board[1][1] == board[3][1]) or
+                    (board[1][2] ~= 0 and board[1][2] == board[2][2] and board[1][2] == board[3][2]) or
+                    (board[1][3] ~= 0 and board[1][3] == board[2][3] and board[1][3] == board[3][3]) or
+                    (board[1][1] ~= 0 and board[1][1] == board[2][2] and board[1][1] == board[3][3]) or
+                    (board[3][1] ~= 0 and board[3][1] == board[2][2] and board[3][1] == board[1][3]) then
+                        print(color_played)
+                        for k, v in pairs(users) do
+                            udp:sendto(string.format("%s %s %s", pseudo, 'wins', color_played), v.ip, v.port)
+                        end
+                end 
+                remaining_turns = remaining_turns -1
+                if remaining_turns == 0 then
+                    for k, v in pairs(users) do
+                        udp:sendto(string.format("%s %s %s", 'nobody', 'wins', '0'), v.ip, v.port)
+                    end
+                end          
             end
-        elseif action == 'wins' then
-            print(message)
-            for k, v in pairs(users) do
-                udp:sendto(string.format("%s %s %s", pseudo, 'wins', message), v.ip,  v.port)
-            end
-            print(WIN)
         elseif action == 'quits' then
             users[pseudo] = nil
         else
@@ -68,5 +90,3 @@ while running do
     end
     socket.sleep(0.01)
 end
-
-
